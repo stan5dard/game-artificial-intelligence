@@ -32,7 +32,7 @@ public class RotatedRectangle {
     
     public _Vector2D C,S;
     public double ang;
-    public double m_tol = 50;
+    public double m_tol = 30;
     ray min45;
     ray forward;
     ray plus45;
@@ -223,15 +223,18 @@ public class RotatedRectangle {
     }
 
     public boolean is_intersected(Obstacle o, ray r){
-        vector box_lt = new vector(o.getX() - o.getWidth()/2, o.getY() + o.getHeight());
-        vector box_rt = new vector(o.getX() + o.getWidth()/2, o.getY( )+ o.getHeight());
-        vector box_lb = new vector(o.getX() - o.getWidth()/2, o.getY() - o.getHeight());
-        vector box_rb = new vector(o.getX() + o.getWidth()/2, o.getY() - o.getHeight());
+        vector box_lt = new vector(o.getX() - o.getWidth(), o.getY() + o.getHeight());
+        vector box_rt = new vector(o.getX() + o.getWidth(), o.getY( )+ o.getHeight());
+        vector box_lb = new vector(o.getX() - o.getWidth(), o.getY() - o.getHeight());
+        vector box_rb = new vector(o.getX() + o.getWidth(), o.getY() - o.getHeight());
+
+        //System.out.print(box_lt.x() + " "+box_lt.y()+"\n");
+
         boolean lt_lb = vertical_edge_intersection(box_lt, box_lb, r);
         boolean lt_rt = horizontal_edge_intersection(box_lt, box_rt, r);
         boolean rt_rb = vertical_edge_intersection(box_rt, box_rb, r);
-        boolean rt_lt = horizontal_edge_intersection(box_rt, box_lt, r);
-        if(lt_lb || lt_rt || rt_rb || rt_lt){
+        boolean lb_rb = horizontal_edge_intersection(box_lb, box_rb, r);
+        if(lt_lb || lt_rt || rt_rb || lb_rb){
             return true;
         }
         else{
@@ -247,7 +250,7 @@ public class RotatedRectangle {
                 return true;
             }
         }
-        return true;
+        return false;
     }
     public boolean horizontal_edge_intersection(vector a, vector b, ray r){
         vector direction = r.getdirection();
@@ -257,6 +260,6 @@ public class RotatedRectangle {
                 return true;
             }
         }
-        return true;
+        return false;
     }
 }
