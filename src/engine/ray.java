@@ -1,9 +1,9 @@
 package engine;
 
 public class ray {
-    vector origin;
-    double angle;
-    vector direction;
+    public vector origin;
+    public double angle;
+    public vector direction;
 
     public ray(vector origin, double angle){
         this.origin = origin;
@@ -19,5 +19,10 @@ public class ray {
     }
     public vector getdirection(){
         return direction;
+    }
+
+    public void reverse(){
+        direction.reverse();
+        angle+=Math.PI;
     }
 }

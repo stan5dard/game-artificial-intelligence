@@ -1,4 +1,5 @@
 package engine;
+import java.awt.Graphics2D;
 
 /**
  *
@@ -31,6 +32,10 @@ public class RotatedRectangle {
     
     public _Vector2D C,S;
     public double ang;
+    public double m_tol = 50;
+    ray min45;
+    ray forward;
+    ray plus45;
     
     public RotatedRectangle(double x, double y, double width, double height, double angle) {
         C = new _Vector2D();
@@ -138,29 +143,120 @@ public class RotatedRectangle {
           (ext1 > TR.y && ext2 > TR.y));
     }
     
-    public boolean raycast(double target_angle, Obstacle[] obstacles, double angle, vector origin){
-        ray min45 = new ray(origin, angle-Math.PI/4);
-        ray forward = new ray(origin, angle);
-        ray plus45 = new ray(origin, angle+Math.PI/4);
-        for(int i = 0; i<9; i++){
+    public boolean raycast(double target_angle, Obstacle[] obstacles, Car subject, boolean is_forward, double tol, boolean go_backward){
+        boolean[] min45ins, forwardins, plus45ins;
+        boolean flag1 = false, flag2 = false, flag3 = false;
+        min45ins = new boolean[obstacles.length];
+        forwardins = new boolean[obstacles.length];
+        plus45ins = new boolean[obstacles.length];
 
+        min45 = new ray(new vector(subject.getX(),subject.getY()), subject.getAngle()-Math.PI/4);
+        forward = new ray(new vector(subject.getX(),subject.getY()), subject.getAngle());
+        plus45 = new ray(new vector(subject.getX(),subject.getY()), subject.getAngle()+Math.PI/4);
+        m_tol = tol;
+
+        if(!is_forward){
+            min45.reverse();
+            min45.angle -= Math.PI/2;
+            forward.reverse();
+            plus45.reverse();
+            plus45.angle += Math.PI/2;
         }
-        return true;
+        
+        for(int i = 0; i<obstacles.length; i++){
+            min45ins[i] = is_intersected(obstacles[i], min45);
+            if(min45ins[i]){
+                flag1 = true;
+            }
+            forwardins[i] = is_intersected(obstacles[i], forward);
+            if(min45ins[i]){
+                flag2 = true;
+            }
+            plus45ins[i] = is_intersected(obstacles[i], plus45);
+            if(min45ins[i]){
+                flag3 = true;
+            }
+        }
+        if(flag2){
+            if(flag1 && !flag3){
+                target_angle = Math.PI/4;
+                System.out.print("1");
+                return true;
+            }
+            else if(!flag1 && flag3){
+                target_angle = -Math.PI/4;
+                System.out.println("2");
+                return true;
+            }
+            else if(flag1 && flag3){
+                go_backward = true;
+                System.out.println("3");
+                return true;
+            }
+            else if(!flag1 && !flag3){
+                target_angle = Math.PI/4;
+                System.out.println("4");
+                return true;
+            }
+        }
+        else if(flag1){
+            if(!flag2 && flag3){
+                target_angle = 0;
+                System.out.println("5");
+                return true;
+            }
+            else if(!flag2 && !flag3){
+                target_angle = Math.PI/4;
+                System.out.println("6");
+                return true;
+            }
+        }
+        else if(flag3){
+            if(!flag1 && !flag2){
+                target_angle = -Math.PI/4;
+                System.out.println("7");
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     public boolean is_intersected(Obstacle o, ray r){
-        double distance = 50;
         vector box_lt = new vector(o.getX() - o.getWidth()/2, o.getY() + o.getHeight());
         vector box_rt = new vector(o.getX() + o.getWidth()/2, o.getY( )+ o.getHeight());
         vector box_lb = new vector(o.getX() - o.getWidth()/2, o.getY() - o.getHeight());
         vector box_rb = new vector(o.getX() + o.getWidth()/2, o.getY() - o.getHeight());
-        return true;
+        boolean lt_lb = vertical_edge_intersection(box_lt, box_lb, r);
+        boolean lt_rt = horizontal_edge_intersection(box_lt, box_rt, r);
+        boolean rt_rb = vertical_edge_intersection(box_rt, box_rb, r);
+        boolean rt_lt = horizontal_edge_intersection(box_rt, box_lt, r);
+        if(lt_lb || lt_rt || rt_rb || rt_lt){
+            return true;
+        }
+        else{
+            return false;
+        }
     }
 
-    public boolean vertical_edge_intersection(double edge){
+    public boolean vertical_edge_intersection(vector a, vector b, ray r){
+        vector direction = r.getdirection();
+        vector intersection = new vector(a.x(), direction.y()*(a.x()-r.origin.x())/direction.x() + r.origin.y());
+        if(intersection.y() > b.y() && intersection.y() < a.y()){
+            if(Math.sqrt((intersection.x()-r.origin.x())*(intersection.x()-r.origin.x())+(intersection.y()-r.origin.y())*(intersection.y()-r.origin.y())) < m_tol){
+                return true;
+            }
+        }
         return true;
     }
-    public boolean horizontal_edge_intersection(double edge){
+    public boolean horizontal_edge_intersection(vector a, vector b, ray r){
+        vector direction = r.getdirection();
+        vector intersection = new vector(direction.x()*(a.y()-r.origin.y())/direction.y() + r.origin.x(), a.y());
+        if(intersection.x() > a.x() && intersection.x() < b.x()){
+            if(Math.sqrt((intersection.x()-r.origin.x())*(intersection.x()-r.origin.x())+(intersection.y()-r.origin.y())*(intersection.y()-r.origin.y())) < m_tol){
+                return true;
+            }
+        }
         return true;
     }
 }

@@ -30,4 +30,9 @@ public class vector {
         x = x/Math.sqrt(x*x + y*y);
         y = y/Math.sqrt(x*x + y*y);
     }
+
+    public void reverse(){
+        x = -x;
+        y = -y;
+    }
 }

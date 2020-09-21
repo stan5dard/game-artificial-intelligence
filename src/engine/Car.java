@@ -20,6 +20,8 @@ public class Car extends GameObject {
     double m_max_velocity = 250;
     double m_min_velocity = -100;
     RotatedRectangle m_collision_box;
+    vector forward;
+    vector right;
         
     public Car(String graphicsFileName, double x, double y, double alpha, Controller c) throws Exception {
         m_img = ImageIO.read(new File(graphicsFileName));
@@ -28,6 +30,8 @@ public class Car extends GameObject {
         m_alpha = alpha;
         m_controller = c;
         m_collision_box = new RotatedRectangle(m_x, m_y, m_img.getWidth()/2, m_img.getHeight()/2, m_alpha);
+        forward = new vector(Math.cos(alpha), Math.sin(alpha));
+        right = new vector(Math.cos(alpha+Math.PI/2), Math.sin(alpha+Math.PI/2));
     }
     
     public Controller getController(){
@@ -42,6 +46,14 @@ public class Car extends GameObject {
         return m_speed;
     }
     
+    public vector getforward(){
+        return forward;
+    }
+
+    public vector getright(){
+        return right;
+    }
+
     public void update(Game game, double delta_t) {
         double controlVariables[] = {0,0,0};
         m_controller.update(this, game, delta_t, controlVariables);
@@ -80,6 +92,11 @@ public class Car extends GameObject {
             m_collision_box.C.y = m_y;
             m_collision_box.ang = m_alpha;
         }
+
+        forward.x = Math.cos(m_alpha);
+        forward.y = Math.sin(m_alpha);
+        right.x = Math.cos(m_alpha+Math.PI/2);
+        right.y = Math.sin(m_alpha+Math.PI/2);
     }
 
     public void draw(Graphics2D g) {

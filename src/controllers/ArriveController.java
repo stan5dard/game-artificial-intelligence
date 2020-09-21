@@ -21,15 +21,14 @@ GameObject targetdest;
         double steer = 0;
         double throt = 0;
         double brk = 0;
-        double velocity = 0;
+        //double velocity = 0;
 
         vector d = new vector(targetdest.getX() - subject.getX(), targetdest.getY() - subject.getY());
         vector nd = new vector(d.x / d.length(), d.y / d.length());
         double distance = d.length();
 
-        double angle = subject.getAngle();
-        vector forward = new vector(Math.cos(angle), Math.sin(angle));
-        vector right = new vector(Math.cos(angle+Math.PI/2), Math.sin(angle+Math.PI/2));
+        vector forward = subject.getforward();
+        vector right = subject.getright();
         
         double rightdot = nd.x*right.x + nd.y*right.y;
         double forwarddot = nd.x*forward.x + nd.y*forward.y;
