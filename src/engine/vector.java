@@ -35,4 +35,8 @@ public class vector {
         x = -x;
         y = -y;
     }
+    public double distance(double x, double y){
+        double dist = Math.sqrt((this.x-x)*(this.x-x) + (this.y-y)*(this.y-y));
+        return dist;
+    }
 }

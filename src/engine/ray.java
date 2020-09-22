@@ -21,8 +21,9 @@ public class ray {
         return direction;
     }
 
+    /*
     public void reverse(){
         direction.reverse();
         angle+=Math.PI;
-    }
+    }*/
 }

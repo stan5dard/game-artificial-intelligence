@@ -5,6 +5,7 @@ import engine.GameObject;
 import engine.RotatedRectangle;
 import engine.Obstacle;
 import engine.ray;
+import engine.intersection;
 
 import java.time.Year;
 
@@ -12,7 +13,7 @@ import engine.vector;
 
 public class WallAvoidanceController extends Controller {
     public GameObject targetdest;
-    public double unitdist = 50;
+    public double unitdist = 70;
     public double new_x;
     public double new_y;
     public Obstacle[] obstacles;
@@ -29,64 +30,89 @@ public class WallAvoidanceController extends Controller {
         double steer = 0;
         double throt = 0;
         double brk = 0;
-        ray rayp45;
-        ray raym45;
-        ray ray0;
-        boolean m45ins = false;
-        boolean p45ins = false;
-        boolean ins0 = false;
-
-        
+        vector origin = new vector(subject.getX(), subject.getY());
         double angle = subject.getAngle();
-        vector forward = subject.getforward();
-        vector right = subject.getright();
-        vector subject_position = new vector(subject.getX(), subject.getY());
 
-        rayp45 = new ray(subject_position, angle + Math.PI/4);
-        raym45 = new ray(subject_position, angle - Math.PI/4);
-        ray0 = new ray(subject_position, angle);
+        ray forwardray = new ray(origin, angle);
+        ray leftray = new ray(origin, angle - Math.PI/4);
+        ray rightray = new ray(origin, angle + Math.PI/4);
 
-        for(int i = 0; i<obstacles.length; i++){
-            m45ins = subject.getCollisionBox().is_intersected(obstacles[i], raym45);
+        intersection ints_forward, ints_left, ints_right;
+        boolean forward_hit = false, left_hit = false, right_hit = false;
+        int i = 0, j = 0, k = 0;
+
+        ints_forward = subject.getCollisionBox().raycast(subject, obstacles[0], forwardray);
+        ints_left = subject.getCollisionBox().raycast(subject, obstacles[0], leftray);
+        ints_right = subject.getCollisionBox().raycast(subject, obstacles[0], rightray);
+
+        for(i=0; i<obstacles.length; i++){
+            ints_forward = subject.getCollisionBox().raycast(subject, obstacles[i], forwardray);
+            if(ints_forward.hit){
+                //System.out.println(i);
+                forward_hit = true;
+                break;
+            }
         }
-        for(int i = 0; i<obstacles.length; i++){
-            ins0 = subject.getCollisionBox().is_intersected(obstacles[i], ray0);
+        for(j=0; j<obstacles.length; j++){
+            ints_left = subject.getCollisionBox().raycast(subject, obstacles[j], leftray);
+            if(ints_left.hit){
+                //System.out.println(j);
+                left_hit = true;
+                break;
+            }
         }
-        for(int i = 0; i<obstacles.length; i++){
-            p45ins = subject.getCollisionBox().is_intersected(obstacles[i], rayp45);
+        for(k=0; k<obstacles.length; k++){
+            ints_right = subject.getCollisionBox().raycast(subject, obstacles[k], rightray);
+            if(ints_right.hit){
+                //System.out.println(k);
+                right_hit = true;
+                break;
+            }
         }
-        System.out.println("45 : "+ m45ins+"    0 : "+ins0+"    p45ins : "+p45ins);
+        //System.out.println("forward : " + ints_forward.hit + "  left : " + ints_left.hit + "   right : " + ints_right.hit);
+        System.out.println("forward : "+i+"  left : "+j+"   right : "+k);
 
         vector d;
         vector nd;
-        
-        if(m45ins && !ins0 && !p45ins){
-            new_x = subject.getX() + unitdist * Math.cos(subject.getAngle() + Math.PI/4);
-            new_y = subject.getY() + unitdist * Math.sin(subject.getAngle() + Math.PI/4);
-            d = new vector(new_x, new_y);
+        if(forward_hit ){
+            double new_x = origin.x() + unitdist * ints_forward.normal.x();
+            double new_y = origin.y() + unitdist * ints_forward.normal.y();
+            
+            d = new vector(new_x - subject.getX(), new_y - subject.getY());
+            nd = new vector(d.x / d.length(), d.y / d.length());
         }
-
-        else if(!m45ins && !ins0 && p45ins){
-            new_x = subject.getX() + unitdist * Math.cos(subject.getAngle() - Math.PI/4);
-            new_y = subject.getY() + unitdist * Math.sin(subject.getAngle() - Math.PI/4);
-            d = new vector(new_x, new_y);
+        else if(left_hit && !forward_hit && !right_hit){
+            double new_x = origin.x() + unitdist * ints_left.normal.x();
+            double new_y = origin.y() + unitdist * ints_left.normal.y(); 
+            d = new vector(new_x - subject.getX(), new_y - subject.getY());
+            nd = new vector(d.x / d.length(), d.y / d.length());
         }
-
+        else if(right_hit && !forward_hit && !left_hit){
+            double new_x = origin.x() + unitdist * ints_right.normal.x();
+            double new_y = origin.y() + unitdist * ints_right.normal.y(); 
+            d = new vector(new_x - subject.getX(), new_y - subject.getY());
+            nd = new vector(d.x / d.length(), d.y / d.length());
+        }
         else{
-            d = new vector(targetdest.getX() - subject.getX(), targetdest.getY() - subject.getY());
+            d = new vector(targetdest.getX()-subject.getX(), targetdest.getY()-subject.getY());
+            nd = new vector(d.x / d.length(), d.y / d.length());
         }
-        nd = new vector(d.x / d.length(), d.y / d.length());
-
+        vector forward = subject.getforward();
+        vector right = subject.getright();
+        
         double rightdot = nd.x*right.x + nd.y*right.y;
         double forwarddot = nd.x*forward.x + nd.y*forward.y;
-
+        
         if(forwarddot >= 0){
-            throt = 1;
+            throt = 0.7;
         }
         else if(forwarddot < 0){
             brk = 1;
         }
         steer = rightdot;
+    
+
+        
         /*
         if(subject.getCollisionBox().raycast(target_angle, obstacles, subject, is_forward, unitdist, go_backward)){
             //System.out.println("inside of raycast");

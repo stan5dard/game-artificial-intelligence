@@ -49,7 +49,7 @@ public class WallAvoidanceSeekScenario {
         obstacles[7] = new Obstacle(657,475,25,25,Color.GRAY);
         obstacles[8] = new Obstacle(375,150,50,300,Color.GRAY);
 
-        for(int i=0;i<5;i++){
+        for(int i=0;i<obstacles.length;i++){
             game.add(obstacles[i]);
         }
 
