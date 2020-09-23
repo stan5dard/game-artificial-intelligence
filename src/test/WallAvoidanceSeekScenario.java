@@ -50,7 +50,6 @@ public class WallAvoidanceSeekScenario {
         obstacles[6] = new Obstacle(100,475,25,25,Color.GRAY);
         obstacles[7] = new Obstacle(657,475,25,25,Color.GRAY);
         obstacles[8] = new Obstacle(375,150,50,300,Color.GRAY);
-        
         for(int i=0;i<obstacles.length;i++){
             game.add(obstacles[i]);
         }
@@ -58,9 +57,8 @@ public class WallAvoidanceSeekScenario {
 
         // set up the cars and markers:
         GameObject car1 = new Car("graphics/redcar.png",200,300,-Math.PI/2, new KeyboardController());
-        //GameObject car2 = new Car("graphics/bluecar.png",600,300,-Math.PI/2, new SeekController(car1));
         GameObject car2 = new Car("graphics/bluecar.png",600,300,-Math.PI/2, new WallAvoidanceController(car1, obstacles));
-        //System.out.println(car2.getX());
+
         game.add(car1);
         game.add(car2);
         GameWindow.newWindow(game);

@@ -20,8 +20,8 @@ public class Car extends GameObject {
     double m_max_velocity = 250;
     double m_min_velocity = -100;
     RotatedRectangle m_collision_box;
-    vector forward;
-    vector right;
+    vector forward; //forwared vector of the car
+    vector right;   // right vector of the car
         
     public Car(String graphicsFileName, double x, double y, double alpha, Controller c) throws Exception {
         m_img = ImageIO.read(new File(graphicsFileName));

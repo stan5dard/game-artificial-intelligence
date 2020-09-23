@@ -1,9 +1,11 @@
 package engine;
 
 public class ray {
-    public vector origin;
-    public double angle;
-    public vector direction;
+// a ray class that is used to implement avoiddance controller.
+
+    public vector origin; // the origin of the ray
+    public double angle;    // the angle of the ray
+    public vector direction;    // the direction of the ray
 
     public ray(vector origin, double angle){
         this.origin = origin;
@@ -19,10 +21,5 @@ public class ray {
     }
     public vector getdirection(){
         return direction;
-    }
-
-    public void reverse(){
-        direction.reverse();
-        angle+=Math.PI;
     }
 }

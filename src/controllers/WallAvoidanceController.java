@@ -2,20 +2,21 @@ package controllers;
 import engine.Car;
 import engine.Game;
 import engine.GameObject;
-import engine.RotatedRectangle;
 import engine.Obstacle;
 import engine.ray;
+import engine.intersection;
 
 import java.time.Year;
 
 import engine.vector;
 
 public class WallAvoidanceController extends Controller {
+    // a controller to make a blue car to avoid walls
     public GameObject targetdest;
-    public double unitdist = 30;
-    public double new_x;
-    public double new_y;
-    public Obstacle[] obstacles;
+    public double unitdist = 50;
+    public double new_x;    // a x value of temp destination when the blue car meets a wall
+    public double new_y;    // a y value of temp destination when the blue car meets a wall
+    public Obstacle[] obstacles;    // walls that were given in this example
 
     public WallAvoidanceController(GameObject target, Obstacle[] obstacles){
         targetdest = target;
@@ -26,154 +27,97 @@ public class WallAvoidanceController extends Controller {
         controlVariables[VARIABLE_STEERING] = 0;
         controlVariables[VARIABLE_THROTTLE] = 0;
         controlVariables[VARIABLE_BRAKE] = 0;
-        double steer = 0;
+        double steer = 0;   // variables to control the blue car
         double throt = 0;
         double brk = 0;
-        ray rightray;
-        ray leftray;
-        ray forwardray;
-        boolean lefthit = false;
-        boolean righthit = false;
-        boolean forwardhit = false;
-        boolean is_forward = false;
+        vector origin = new vector(subject.getX(), subject.getY());     // a place where the red car is.
+        double angle = subject.getAngle();          // The angle of the red car
 
-        
-        double angle = subject.getAngle();
-        vector forward = subject.getforward();
-        vector right = subject.getright();
-        vector subject_position = new vector(subject.getX(), subject.getY());
+        ray forwardray = new ray(origin, angle);        // To avoid the walls, we will cast three rays at three different directions.
+        ray leftray = new ray(origin, angle - Math.PI/4);
+        ray rightray = new ray(origin, angle + Math.PI/4);
 
-        //if(is_forward){
-            rightray = new ray(subject_position, angle + Math.PI/4);
-            leftray = new ray(subject_position, angle - Math.PI/4);
-            forwardray = new ray(subject_position, angle);
-        //}
-        /*
-        else{
-            rightray = new ray(subject_position, angle + Math.PI/4 + Math.PI/2);
-            leftray = new ray(subject_position, angle - Math.PI/4 + 1.5*Math.PI);
-            forwardray = new ray(subject_position, angle + Math.PI);
-        }*/
+        intersection ints_forward, ints_left, ints_right;   // a variables to store the information of intersection between the walls and the rays
+        boolean forward_hit = false, left_hit = false, right_hit = false;   // a boolean variable to keep whether each three rays met the walls or not
+        int i = 0, j = 0, k = 0;
 
-        for(int i = 0; i<obstacles.length; i++){
-            lefthit = subject.getCollisionBox().is_intersected(obstacles[i], leftray);
-        }
-        for(int i = 0; i<obstacles.length; i++){
-            forwardhit = subject.getCollisionBox().is_intersected(obstacles[i], forwardray);
-            if(forwardhit){
-                System.out.print(i);
+        ints_forward = subject.getCollisionBox().raycast(subject, obstacles[0], forwardray);    // perform a raycast method. store the information of the intersected points
+        ints_left = subject.getCollisionBox().raycast(subject, obstacles[0], leftray);
+        ints_right = subject.getCollisionBox().raycast(subject, obstacles[0], rightray);
+
+        for(i=0; i<obstacles.length; i++){
+            ints_forward = subject.getCollisionBox().raycast(subject, obstacles[i], forwardray);
+            if(ints_forward.hit){
+                //System.out.println(i);
+                forward_hit = true;     // if there is a intersection, stop the loop
+                break;
             }
         }
-        for(int i = 0; i<obstacles.length; i++){
-            righthit = subject.getCollisionBox().is_intersected(obstacles[i], rightray);
+        for(j=0; j<obstacles.length; j++){
+            ints_left = subject.getCollisionBox().raycast(subject, obstacles[j], leftray);
+            if(ints_left.hit){
+                //System.out.println(j);
+                left_hit = true;
+                break;
+            }
         }
-        System.out.println("-45 : "+ lefthit+"    0 : "+forwardhit+"    +45 : "+righthit);
+        for(k=0; k<obstacles.length; k++){
+            ints_right = subject.getCollisionBox().raycast(subject, obstacles[k], rightray);
+            if(ints_right.hit){
+                //System.out.println(k);
+                right_hit = true;
+                break;
+            }
+        }
+        //System.out.println("forward : "+i+"  left : "+j+"   right : "+k);
 
+
+        // in this part, we will deal with the case when the car met the wall.
+        // the car first has to go to a safe temporary point.
+        // Therefore, now d, the final destination is not the red car, and it is newely computed.
         vector d;
         vector nd;
+        if(forward_hit ){
+            double new_x = origin.x() + unitdist * ints_forward.normal.x();
+            double new_y = origin.y() + unitdist * ints_forward.normal.y();
+            
+            d = new vector(new_x - subject.getX(), new_y - subject.getY());
+            nd = new vector(d.x / d.length(), d.y / d.length());
+        }
+        else if(left_hit && !forward_hit && !right_hit){
+            double new_x = origin.x() + unitdist * ints_left.normal.x();
+            double new_y = origin.y() + unitdist * ints_left.normal.y(); 
+            d = new vector(new_x - subject.getX(), new_y - subject.getY());
+            nd = new vector((Math.random()%4+1)*d.x / d.length(), (Math.random()%4+1)*d.y / d.length()); // random numbers were multiplied to prevent stall
+        }
+        else if(right_hit && !forward_hit && !left_hit){
+            double new_x = origin.x() + unitdist * ints_right.normal.x();
+            double new_y = origin.y() + unitdist * ints_right.normal.y(); 
+            d = new vector(new_x - subject.getX(), new_y - subject.getY());
+            nd = new vector((Math.random()%4+1)*d.x / d.length(), (Math.random()%4+1)*d.y / d.length());
+        }
+        else{ // here, the car didn't met the wall. in this case, the blue car has to follow the red car.
+            d = new vector(targetdest.getX()-subject.getX(), targetdest.getY()-subject.getY());
+            nd = new vector(d.x / d.length(), d.y / d.length());
+        }
+
+        // After computing the destination, use seek method to follow the target.
+        vector forward = subject.getforward();
+        vector right = subject.getright();
         
-        if(!lefthit && forwardhit && !righthit){
-            new_x = subject.getX() - unitdist * forward.x();
-            new_y = subject.getY() - unitdist * forward.y();
-            d = new vector(new_x, new_y);
-        }
-        else if(lefthit && forwardhit && righthit){
-            new_x = subject.getX() - unitdist * forward.x();
-            new_y = subject.getY() - unitdist * forward.y();
-            d = new vector(new_x, new_y);
-        }
-        else if(lefthit && forwardhit && !righthit){
-            new_x = subject.getX() - unitdist * leftray.direction.x();
-            new_y = subject.getY() - unitdist * leftray.direction.y();
-            d = new vector(new_x, new_y);
-        }
-
-        else if(!lefthit && forwardhit && righthit){
-            new_x = subject.getX() - unitdist * rightray.direction.x();
-            new_y = subject.getY() - unitdist * rightray.direction.y();
-            d = new vector(new_x, new_y);
-        }
-        else if(!lefthit && !forwardhit && righthit){
-            new_x = subject.getX() - unitdist * rightray.direction.x();
-            new_y = subject.getY() - unitdist * rightray.direction.y();
-            d = new vector(new_x, new_y);
-        }
-        else if(lefthit && !forwardhit && !righthit){
-            new_x = subject.getX() - unitdist * leftray.direction.x();
-            new_y = subject.getY() - unitdist * leftray.direction.y();
-            d = new vector(new_x, new_y);
-        }
-        else if(lefthit && !forwardhit && righthit){
-            d = new vector(targetdest.getX() - subject.getX(), targetdest.getY() - subject.getY());
-        }
-        else{
-            d = new vector(targetdest.getX() - subject.getX(), targetdest.getY() - subject.getY());
-        }
-        nd = new vector(d.x / d.length(), d.y / d.length());
-
         double rightdot = nd.x*right.x + nd.y*right.y;
         double forwarddot = nd.x*forward.x + nd.y*forward.y;
-
+        
         if(forwarddot >= 0){
-            throt = 1;
-            is_forward = true;
+            throt = 0.7;
         }
         else if(forwarddot < 0){
-            brk = 1;
-            is_forward = false;
+            brk = 0.7;
         }
         steer = rightdot;
-        /*
-        if(subject.getCollisionBox().raycast(target_angle, obstacles, subject, is_forward, unitdist, go_backward)){
-            //System.out.println("inside of raycast");
-            new_x = subject.getX() + unitdist * Math.cos(subject.getAngle()+target_angle);
-            new_y = subject.getY() + unitdist * Math.sin(subject.getAngle()+target_angle);
-            System.out.println(target_angle);
-            vector d = new vector(new_x - subject.getX(), new_y - subject.getY());
-            vector nd = new vector(d.x / d.length(), d.y / d.length());
-
-            vector forward = subject.getforward();
-            vector right = subject.getright();
-            
-            double rightdot = nd.x*right.x + nd.y*right.y;
-            double forwarddot = nd.x*forward.x + nd.y*forward.y;
-            //System.out.println(go_backward);
-            if(go_backward){
-                //System.out.println("go_backward");
-                brk = 1;
-            }
-            else{
-                if(forwarddot >= 0){
-                    throt = 1;
-                }
-                else if(forwarddot < 0){
-                    brk = 1;
-                }
-                steer = rightdot;
-            }
-        }
-        else{
-            System.out.println("inside of seek");
-            vector d = new vector(targetdest.getX() - subject.getX(), targetdest.getY() - subject.getY());
-            vector nd = new vector(d.x / d.length(), d.y / d.length());
-
-            double angle = subject.getAngle();
-            vector forward = new vector(Math.cos(angle), Math.sin(angle));
-            vector right = new vector(Math.cos(angle+Math.PI/2), Math.sin(angle+Math.PI/2));
-            
-            double rightdot = nd.x*right.x + nd.y*right.y;
-            double forwarddot = nd.x*forward.x + nd.y*forward.y;
-
-            if(forwarddot >= 0){
-                throt = 1;
-            }
-            else if(forwarddot < 0){
-                brk = 1;
-            }
-            steer = rightdot;
-        }*/
+    
         controlVariables[VARIABLE_STEERING] = steer;
         controlVariables[VARIABLE_THROTTLE] = throt;
-        controlVariables[VARIABLE_BRAKE] = brk;
+        controlVariables[VARIABLE_BRAKE] = brk; 
     }
 }

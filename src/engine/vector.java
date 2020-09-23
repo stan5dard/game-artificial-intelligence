@@ -1,6 +1,7 @@
 package engine;
 
 public class vector {
+    // a 2dimension vector class that is made for convenience.
     public double x, y, length;
 
     public vector(){
@@ -34,5 +35,20 @@ public class vector {
     public void reverse(){
         x = -x;
         y = -y;
+    }
+    public double distance(double x, double y){
+        double dist = Math.sqrt((this.x-x)*(this.x-x) + (this.y-y)*(this.y-y));
+        return dist;
+    }
+
+    public double dot(double x, double y){
+        double d = this.x * x + this.y * y;
+        return d;
+    }
+
+    public vector mult(double m){
+        double a = this.x * m;
+        double b = this.y * m;
+        return new vector(a, b);
     }
 }

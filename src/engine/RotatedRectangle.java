@@ -32,7 +32,7 @@ public class RotatedRectangle {
     
     public _Vector2D C,S;
     public double ang;
-    public double m_tol = 30;
+    //public double m_tol = 30;
     ray min45;
     ray forward;
     ray plus45;
@@ -142,124 +142,88 @@ public class RotatedRectangle {
      return !((ext1 < BL.y && ext2 < BL.y) ||
           (ext1 > TR.y && ext2 > TR.y));
     }
-    
-    public boolean raycast(double target_angle, Obstacle[] obstacles, Car subject, boolean is_forward, double tol, boolean go_backward){
-        boolean[] min45ins, forwardins, plus45ins;
-        boolean flag1 = false, flag2 = false, flag3 = false;
-        min45ins = new boolean[obstacles.length];
-        forwardins = new boolean[obstacles.length];
-        plus45ins = new boolean[obstacles.length];
 
-        min45 = new ray(new vector(subject.getX(),subject.getY()), subject.getAngle()-Math.PI/4);
-        forward = new ray(new vector(subject.getX(),subject.getY()), subject.getAngle());
-        plus45 = new ray(new vector(subject.getX(),subject.getY()), subject.getAngle()+Math.PI/4);
-        m_tol = tol;
-
-        if(!is_forward){
-            min45.reverse();
-            min45.angle -= Math.PI/2;
-            forward.reverse();
-            plus45.reverse();
-            plus45.angle += Math.PI/2;
-        }
+    public intersection raycast(Car subject, Obstacle o, ray r){
+        // a raycast method that is used for wall avoidacne
+        intersection i = new intersection();
         
-        for(int i = 0; i<obstacles.length; i++){
-            min45ins[i] = is_intersected(obstacles[i], min45);
-            if(min45ins[i]){
-                flag1 = true;
-            }
-            forwardins[i] = is_intersected(obstacles[i], forward);
-            if(min45ins[i]){
-                flag2 = true;
-            }
-            plus45ins[i] = is_intersected(obstacles[i], plus45);
-            if(min45ins[i]){
-                flag3 = true;
-            }
-        }
-        if(flag2){
-            if(flag1 && !flag3){
-                target_angle = Math.PI/4;
-                System.out.print("1");
-                return true;
-            }
-            else if(!flag1 && flag3){
-                target_angle = -Math.PI/4;
-                System.out.println("2");
-                return true;
-            }
-            else if(flag1 && flag3){
-                go_backward = true;
-                System.out.println("3");
-                return true;
-            }
-            else if(!flag1 && !flag3){
-                target_angle = Math.PI/4;
-                System.out.println("4");
-                return true;
-            }
-        }
-        else if(flag1){
-            if(!flag2 && flag3){
-                target_angle = 0;
-                System.out.println("5");
-                return true;
-            }
-            else if(!flag2 && !flag3){
-                target_angle = Math.PI/4;
-                System.out.println("6");
-                return true;
-            }
-        }
-        else if(flag3){
-            if(!flag1 && !flag2){
-                target_angle = -Math.PI/4;
-                System.out.println("7");
-                return true;
-            }
-        }
+        double hit_distance = 50;
+
+        boolean lv = false;
+        boolean rv = false;
+        boolean th = false;
+        boolean bh = false;
+
+        // calculate the four corners of the wall
+        vector lt = new vector(o.getX() - o.getWidth()/2, o.getY() + o.getHeight()/2);
+        vector rt = new vector(o.getX() + o.getWidth()/2, o.getY( )+ o.getHeight()/2);
+        vector lb = new vector(o.getX() - o.getWidth()/2, o.getY() - o.getHeight()/2);
+        vector rb = new vector(o.getX() + o.getWidth()/2, o.getY() - o.getHeight()/2);
         
-        return false;
-    }
-
-    public boolean is_intersected(Obstacle o, ray r){
-        vector box_lt = new vector(o.getX() - o.getWidth(), o.getY() + o.getHeight());
-        vector box_rt = new vector(o.getX() + o.getWidth(), o.getY( )+ o.getHeight());
-        vector box_lb = new vector(o.getX() - o.getWidth(), o.getY() - o.getHeight());
-        vector box_rb = new vector(o.getX() + o.getWidth(), o.getY() - o.getHeight());
-
-        //System.out.print(box_lt.x() + " "+box_lt.y()+"\n");
-
-        boolean lt_lb = vertical_edge_intersection(box_lt, box_lb, r);
-        boolean lt_rt = horizontal_edge_intersection(box_lt, box_rt, r);
-        boolean rt_rb = vertical_edge_intersection(box_rt, box_rb, r);
-        boolean lb_rb = horizontal_edge_intersection(box_lb, box_rb, r);
-        if(lt_lb || lt_rt || rt_rb || lb_rb){
-            return true;
-        }
-        else{
-            return false;
-        }
-    }
-
-    public boolean vertical_edge_intersection(vector a, vector b, ray r){
+        // get the direction of the ray
         vector direction = r.getdirection();
-        vector intersection = new vector(a.x(), direction.y()*(a.x()-r.origin.x())/direction.x() + r.origin.y());
-        if(intersection.y() > b.y() && intersection.y() < a.y()){
-            if(Math.sqrt((intersection.x()-r.origin.x())*(intersection.x()-r.origin.x())+(intersection.y()-r.origin.y())*(intersection.y()-r.origin.y())) < m_tol){
-                return true;
-            }
+
+        // compte the intersection between the ray and the edge using line equation.
+        vector left_vert_ins = new vector(lt.x(), direction.y()*(lt.x()-r.origin.x())/direction.x() + r.origin.y());
+        vector right_vert_ins = new vector(rt.x(), direction.y()*(rt.x()-r.origin.x())/direction.x() + r.origin.y());
+        vector top_horz_ins = new vector(direction.x()*(lt.y()-r.origin.y())/direction.y() + r.origin.x(), lt.y());
+        vector bot_horz_ins = new vector(direction.x()*(lb.y()-r.origin.y())/direction.y() + r.origin.x(), lb.y());
+
+        // determine whether the computed intersection is along the square
+        if(left_vert_ins.y() >= lb.y() && left_vert_ins.y() <= lt.y()){
+            if(left_vert_ins.distance(subject.getX(), subject.getY()) < hit_distance){
+                lv = true;
+            }      
         }
-        return false;
-    }
-    public boolean horizontal_edge_intersection(vector a, vector b, ray r){
-        vector direction = r.getdirection();
-        vector intersection = new vector(direction.x()*(a.y()-r.origin.y())/direction.y() + r.origin.x(), a.y());
-        if(intersection.x() > a.x() && intersection.x() < b.x()){
-            if(Math.sqrt((intersection.x()-r.origin.x())*(intersection.x()-r.origin.x())+(intersection.y()-r.origin.y())*(intersection.y()-r.origin.y())) < m_tol){
-                return true;
-            }
+        if(right_vert_ins.y() >= rb.y() && right_vert_ins.y() <= rt.y()){
+            if(right_vert_ins.distance(subject.getX(), subject.getY()) < hit_distance){
+                rv = true;
+            }  
         }
-        return false;
+        if(top_horz_ins.x() >= lt.x() && top_horz_ins.x() <= rt.x()){
+            if(top_horz_ins.distance(subject.getX(), subject.getY()) < hit_distance){
+                th = true;
+            }  
+        }
+        if(bot_horz_ins.x() >= lb.x() && bot_horz_ins.x() <= rb.x()){
+            if(bot_horz_ins.distance(subject.getX(), subject.getY()) < hit_distance){
+                bh = true;
+            }  
+        }
+        //System.out.println(bh);
+        if(lv||rv||th||bh){
+            i.hit = true;
+        }
+        //System.out.println(i.hit);
+
+        // between the four intersections that were computed above, we have to know the intersection
+        // that is closest to the car. The closest intersection must be the actual intersection.
+        double dist1 = left_vert_ins.distance(subject.getX(), subject.getY());
+        double dist2 = right_vert_ins.distance(subject.getX(), subject.getY());
+        double dist3 = top_horz_ins.distance(subject.getX(), subject.getY());
+        double dist4 = bot_horz_ins.distance(subject.getX(), subject.getY());
+
+        if(dist1 < dist2 && dist1 < dist3 && dist1 < dist4){
+            i.ins = left_vert_ins;
+            i.normal = new vector(-1, 0);
+            i.distance = dist1;
+        }
+        else if(dist2 < dist1 && dist2 < dist3 && dist2 < dist4){
+            i.ins = right_vert_ins;
+            i.normal = new vector(1, 0);
+            i.distance = dist2;
+        }
+        if(dist3 < dist1 && dist3 < dist2 && dist3 < dist4){
+            i.ins = top_horz_ins;
+            i.normal = new vector(0, 1);
+            i.distance = dist3;
+        }
+        if(dist4 < dist1 && dist4 < dist2 && dist4 < dist3){
+            i.ins = bot_horz_ins;
+            i.normal = new vector(0, -1);
+            i.distance = dist4;
+        }
+
+        return i;
     }
 }

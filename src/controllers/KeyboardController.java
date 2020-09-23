@@ -50,8 +50,8 @@ public class KeyboardController extends Controller {
         //System.out.println(subject.getAngle());
         if (keyboardState[key_left] && !keyboardState[key_right]) controlVariables[VARIABLE_STEERING] = -1;
         if (keyboardState[key_right] && !keyboardState[key_left]) controlVariables[VARIABLE_STEERING] = +1;
-        if (keyboardState[key_accelerate]) controlVariables[VARIABLE_THROTTLE] = 1;
-        if (keyboardState[key_brake]) controlVariables[VARIABLE_BRAKE] = 1;
+        if (keyboardState[key_accelerate]) controlVariables[VARIABLE_THROTTLE] = 0.7;
+        if (keyboardState[key_brake]) controlVariables[VARIABLE_BRAKE] = 0.7;
     }
     
 }
